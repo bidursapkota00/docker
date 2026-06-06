@@ -8,17 +8,16 @@
 2. [Installation & Setup](#installation--setup)
 3. [Docker Images](#docker-images)
 4. [Docker Containers](#docker-containers)
-5. [Writing a Dockerfile](#writing-a-dockerfile)
-6. [Building & Running a FastAPI App](#building--running-a-fastapi-app)
-7. [Docker Volumes](#docker-volumes)
-8. [Docker Networking](#docker-networking)
-9. [Docker Compose](#docker-compose)
-10. [Docker Hub](#docker-hub)
-11. [Multi-Stage Builds](#multi-stage-builds)
-12. [Environment Variables & .env Files](#environment-variables--env-files)
-13. [Docker Logs & Debugging](#docker-logs--debugging)
-14. [Docker Prune & Cleanup](#docker-prune--cleanup)
-15. [Best Practices](#best-practices)
+5. [Dockerizing a FastAPI App](#dockerizing-a-fastapi-app)
+6. [Docker Volumes](#docker-volumes)
+7. [Docker Networking](#docker-networking)
+8. [Docker Compose](#docker-compose)
+9. [Docker Hub](#docker-hub)
+10. [Multi-Stage Builds](#multi-stage-builds)
+11. [Environment Variables & .env Files](#environment-variables--env-files)
+12. [Docker Logs & Debugging](#docker-logs--debugging)
+13. [Docker Prune & Cleanup](#docker-prune--cleanup)
+14. [Best Practices](#best-practices)
 
 ---
 
@@ -79,7 +78,7 @@ An image is a lightweight, standalone package that includes everything needed to
 
 ```bash
 docker pull nginx                     # Pull latest nginx image
-docker pull python:3.12-slim          # Pull specific version
+docker pull python:3.14-slim          # Pull specific version
 docker pull ubuntu:22.04              # Pull specific Ubuntu version
 ```
 
@@ -97,7 +96,7 @@ docker images -q                      # List only image IDs
 ### Removing Images
 
 ```bash
-docker rmi nginx                      # Remove by name
+docker rmi python:3.14-slim          # Remove by name
 docker rmi 3a4e5b6c7d8e              # Remove by image ID
 docker rmi $(docker images -q)       # Remove all images
 ```
@@ -166,7 +165,7 @@ docker exec web cat /etc/os-release   # Run a single command
 ```bash
 docker rm web                         # Remove a stopped container
 docker rm -f web                      # Force remove (even if running)
-docker rm $(docker ps -aq)           # Remove all stopped containers
+docker rm $(docker ps -aq)            # Remove all stopped containers
 ```
 
 `-f` (force) stops the container first and then removes it. `docker ps -aq` lists all container IDs including stopped ones.
@@ -182,73 +181,19 @@ The first argument is the source and the second is the destination. The format `
 
 ---
 
-## Writing a Dockerfile
+## Dockerizing a FastAPI App
 
-A Dockerfile is a text file that contains instructions to build a Docker image, one instruction per line. Docker reads each instruction, executes it, and creates a new image layer.
+This section builds a single project that all remaining sections will use. You will create the app, write a Dockerfile, and learn every Dockerfile instruction along the way.
 
-### Dockerfile Instructions
+### Create Virtual Environment
 
-| Instruction  | Purpose                                                    |
-| ------------ | ---------------------------------------------------------- |
-| `FROM`       | Base image to build upon (must be first instruction)       |
-| `WORKDIR`    | Set working directory inside the container                 |
-| `COPY`       | Copy files/directories from host to container              |
-| `ADD`        | Like COPY but also handles URLs and tar extraction         |
-| `RUN`        | Execute a command during the build (creates a new layer)   |
-| `CMD`        | Default command to run when the container starts           |
-| `ENTRYPOINT` | Like CMD but harder to override; sets the main executable  |
-| `EXPOSE`     | Document which port the container listens on               |
-| `ENV`        | Set environment variables                                  |
-| `ARG`        | Define build-time variables                                |
-| `VOLUME`     | Create a mount point for persistent data                   |
+Since we are working locally before Dockerizing, create a venv to isolate dependencies:
 
-### Simple Example
-
-```dockerfile
-FROM python:3.12-slim
-
-WORKDIR /app
-
-COPY . .
-
-RUN pip install --no-cache-dir -r requirements.txt
-
-EXPOSE 8000
-
-CMD ["python", "app.py"]
+```bash
+python -m venv venv
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
 ```
-
-`FROM python:3.12-slim` starts with a minimal Python 3.12 image. `WORKDIR /app` sets `/app` as the working directory for all subsequent instructions; it is created if it does not exist. `COPY . .` copies everything from the build context (host directory) to `/app` inside the container. `RUN` executes during the build; `--no-cache-dir` prevents pip from caching downloaded packages, reducing the image size. `EXPOSE 8000` documents that the app listens on port 8000 (does not actually publish the port — you still need `-p`). `CMD` specifies the default command when a container starts; using the exec form `["python", "app.py"]` is preferred over the shell form.
-
-### CMD vs ENTRYPOINT
-
-```dockerfile
-# CMD — can be overridden entirely by docker run arguments
-CMD ["python", "app.py"]
-
-# ENTRYPOINT — stays fixed; docker run arguments are appended
-ENTRYPOINT ["python"]
-CMD ["app.py"]
-```
-
-With the combined form, `docker run myimage script.py` would run `python script.py` — the entrypoint (`python`) stays fixed and the CMD (`app.py`) is replaced by `script.py`.
-
-### .dockerignore
-
-Like `.gitignore`, a `.dockerignore` file excludes files from the build context to reduce image size and avoid copying sensitive data.
-
-```
-.git
-.env
-__pycache__
-*.pyc
-node_modules
-.venv
-```
-
----
-
-## Building & Running a FastAPI App
 
 ### FastAPI Setup
 
@@ -288,14 +233,32 @@ This starts the development server at `http://127.0.0.1:8000` with auto-reload e
 
 ### Create `requirements.txt`
 
+```bash
+pip freeze > requirements.txt
 ```
-fastapi[standard]
-```
+
+### Dockerfile Instructions Reference
+
+A Dockerfile is a text file that contains instructions to build a Docker image, one instruction per line. Docker reads each instruction, executes it, and creates a new image layer.
+
+| Instruction  | Purpose                                                   |
+| ------------ | --------------------------------------------------------- |
+| `FROM`       | Base image to build upon (must be first instruction)      |
+| `WORKDIR`    | Set working directory inside the container                |
+| `COPY`       | Copy files/directories from host to container             |
+| `ADD`        | Like COPY but also handles URLs and tar extraction        |
+| `RUN`        | Execute a command during the build (creates a new layer)  |
+| `CMD`        | Default command to run when the container starts          |
+| `ENTRYPOINT` | Like CMD but harder to override; sets the main executable |
+| `EXPOSE`     | Document which port the container listens on              |
+| `ENV`        | Set environment variables                                 |
+| `ARG`        | Define build-time variables                               |
+| `VOLUME`     | Create a mount point for persistent data                  |
 
 ### Create `Dockerfile`
 
 ```dockerfile
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -309,7 +272,42 @@ EXPOSE 8000
 CMD ["fastapi", "run", "main.py", "--port", "8000"]
 ```
 
-`COPY requirements.txt .` is done before `COPY . .` so that Docker caches the dependency installation layer. If only your source code changes (not dependencies), Docker reuses the cached `RUN pip install` layer, making rebuilds much faster. `fastapi run` starts the production server using Uvicorn internally.
+`FROM python:3.14-slim` starts with a minimal Python 3.14 image. `WORKDIR /app` sets `/app` as the working directory for all subsequent instructions; it is created if it does not exist. `COPY requirements.txt .` copies only the requirements file first. `RUN` executes during the build; `--no-cache-dir` prevents pip from caching downloaded packages, reducing the image size. `COPY . .` then copies the rest of the source code. This two-step copy order means Docker caches the dependency installation layer — if only your source code changes, Docker reuses the cached `RUN pip install` layer, making rebuilds much faster. `EXPOSE 8000` documents that the app listens on port 8000 (does not actually publish the port — you still need `-p`). `CMD` specifies the default command when a container starts; using the exec form `["fastapi", "run", ...]` is preferred over the shell form. `fastapi run` starts the production server using Uvicorn internally.
+
+### CMD vs ENTRYPOINT
+
+```dockerfile
+# CMD — can be overridden entirely by docker run arguments
+CMD ["fastapi", "run", "main.py", "--port", "8000"]
+
+# ENTRYPOINT — stays fixed; docker run arguments are appended
+ENTRYPOINT ["fastapi"]
+CMD ["run", "main.py", "--port", "8000"]
+```
+
+With the combined form, `docker run myimage dev main.py` would run `fastapi dev main.py` — the entrypoint (`fastapi`) stays fixed and the CMD is replaced by the arguments you pass.
+
+### Create `.dockerignore`
+
+Like `.gitignore`, a `.dockerignore` file excludes files from the build context to reduce image size and avoid copying sensitive data. Before building the Docker image, create a `.dockerignore` file at the project root (same level as Dockerfile). This ensures Docker does NOT copy unnecessary files like your local virtual environment.
+
+```text
+# Virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Git / environment files
+.git/
+.env
+
+# IDE files
+.vscode/
+.idea/
+```
 
 ### Build & Run
 
@@ -328,11 +326,11 @@ Containers are ephemeral — data inside a container is lost when it is removed.
 
 ### Types of Mounts
 
-| Type         | Description                                                     |
-| ------------ | --------------------------------------------------------------- |
-| Volume       | Managed by Docker, stored in Docker's storage area              |
-| Bind Mount   | Maps a specific host directory into the container               |
-| tmpfs Mount  | Stored in host memory only, never written to disk               |
+| Type        | Description                                        |
+| ----------- | -------------------------------------------------- |
+| Volume      | Managed by Docker, stored in Docker's storage area |
+| Bind Mount  | Maps a specific host directory into the container  |
+| tmpfs Mount | Stored in host memory only, never written to disk  |
 
 ### Named Volumes
 
@@ -341,15 +339,18 @@ docker volume create app-data         # Create a named volume
 docker volume ls                      # List all volumes
 docker volume inspect app-data        # Show volume details
 
-docker run -d -v app-data:/app/data --name api fastapi-app
+docker run -d -v app-data:/data --name api fastapi-app
 ```
 
-`-v app-data:/app/data` mounts the volume `app-data` at `/app/data` inside the container. Data written to `/app/data` persists across container restarts and removal.
+`-v app-data:/data` mounts the volume `app-data` at `/data` inside the container. Data written to `/data` persists across container restarts and removal.
 
 ### Bind Mounts
 
 ```bash
 docker run -d -v $(pwd):/app -p 8000:8000 --name api fastapi-app
+
+# complete
+docker run -d -v $(pwd):/app -v app-data:/data -p 8000:8000 --name api fastapi-app
 ```
 
 `$(pwd)` expands to the current working directory on the host. Bind mounts reflect changes immediately in both directions — edit files on your host and the container sees them instantly. Useful for development.
@@ -371,11 +372,11 @@ Docker creates virtual networks that allow containers to communicate with each o
 
 ### Network Types
 
-| Driver    | Description                                                        |
-| --------- | ------------------------------------------------------------------ |
-| `bridge`  | Default. Isolated network on a single host. Containers use names to communicate |
-| `host`    | Container shares the host's network directly (no port mapping needed) |
-| `none`    | No networking. Fully isolated container                            |
+| Driver   | Description                                                                     |
+| -------- | ------------------------------------------------------------------------------- |
+| `bridge` | Default. Isolated network on a single host. Containers use names to communicate |
+| `host`   | Container shares the host's network directly (no port mapping needed)           |
+| `none`   | No networking. Fully isolated container                                         |
 
 ### Working with Networks
 
@@ -529,14 +530,14 @@ Multi-stage builds let you use multiple `FROM` instructions in a single Dockerfi
 
 ```dockerfile
 # Stage 1: Install dependencies
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Production image
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 COPY --from=builder /install /usr/local
@@ -640,18 +641,3 @@ docker system df                      # Show Docker disk usage
 ```
 
 `prune` removes unused resources and prompts for confirmation. `-a` (all) with `image prune` removes all images not used by a container, not just dangling ones. `system prune` is a combined cleanup — it removes stopped containers, unused networks, and dangling images in one command. `-a --volumes` with `system prune` also removes unused images and volumes. `system df` shows how much disk space Docker is using broken down by images, containers, volumes, and build cache.
-
----
-
-## Best Practices
-
-1. **Use specific image tags** — `python:3.12-slim` over `python:latest` for reproducible builds.
-2. **Use slim/alpine base images** — They are smaller and have fewer vulnerabilities.
-3. **Order Dockerfile instructions by change frequency** — Put rarely changing instructions (dependencies) before frequently changing ones (source code) to maximize layer caching.
-4. **Use `.dockerignore`** — Exclude `.git`, `.env`, `__pycache__`, `node_modules`, and other unnecessary files.
-5. **One process per container** — Run your web server in one container and the database in another.
-6. **Use multi-stage builds** — Keep final images small by separating build and runtime stages.
-7. **Don't run as root** — Add `RUN adduser --disabled-password appuser` and `USER appuser` in your Dockerfile.
-8. **Use named volumes for persistent data** — Don't rely on container filesystem for important data.
-9. **Use Docker Compose for multi-container apps** — Define everything in one file, start with one command.
-10. **Tag and push images to Docker Hub** — Version your images with semantic tags (`1.0`, `1.1`, `latest`).
