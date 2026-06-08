@@ -2,6 +2,8 @@
 
 ![Bidur Sapkota](https://www.bidursapkota.com.np/images/gravatar.webp "Bidur Sapkota - Developer")&nbsp;[Bidur Sapkota](https://www.bidursapkota.com.np/)
 
+![Docker and Docker Hub Complete Guide by Bidur Sapkota](docker-1200.webp "Docker and Docker Hub Complete Guide – Blog by Bidur Sapkota")
+
 ## Table of Contents
 
 1. [Introducing Docker](#introducing-docker)
@@ -17,7 +19,6 @@
 11. [Environment Variables & .env Files](#environment-variables--env-files)
 12. [Docker Logs & Debugging](#docker-logs--debugging)
 13. [Docker Prune & Cleanup](#docker-prune--cleanup)
-14. [Best Practices](#best-practices)
 
 ---
 
