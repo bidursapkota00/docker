@@ -216,10 +216,6 @@ app = FastAPI()
 @app.get("/")
 def read_root():
     return {"message": "Hello, Docker!"}
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str = None):
-    return {"item_id": item_id, "q": q}
 ```
 
 `@app.get("/")` defines a GET endpoint at the root path. `{item_id}` is a path parameter automatically parsed as an `int`. `q: str = None` is an optional query parameter.
