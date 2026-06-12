@@ -24,11 +24,11 @@
 
 ## Introducing Docker
 
-Docker is a platform that packages applications and their dependencies into lightweight, portable containers. Unlike virtual machines, containers share the host OS kernel — making them faster to start, smaller in size, and more efficient with resources. A container bundles your code, runtime, libraries, and system tools into a single unit that runs identically on any machine with Docker installed.
+Docker is a platform that packages applications and their dependencies into lightweight, portable containers. Unlike virtual machines, containers share the host OS kernel, making them faster to start, smaller in size, and more efficient with resources. A container bundles your code, runtime, libraries, and system tools into a single unit that runs identically on any machine with Docker installed.
 
 Docker lets you eliminate "works on my machine" problems, ship applications with consistent environments across development, testing, and production, isolate services from each other, scale applications quickly, and simplify CI/CD pipelines.
 
-### Key Concepts
+Docker revolves around a few core building blocks that you will use throughout this guide:
 
 - **Image**: A read-only template with instructions for creating a container. Think of it as a snapshot of your application and its environment.
 - **Container**: A running instance of an image. You can run many containers from the same image.
@@ -73,7 +73,7 @@ docker run hello-world
 
 ## Docker Images
 
-An image is a lightweight, standalone package that includes everything needed to run a piece of software — code, runtime, libraries, and configuration.
+An image is a lightweight, standalone package that includes everything needed to run a piece of software, including code, runtime, libraries, and configuration.
 
 ### Pulling Images
 
@@ -269,20 +269,20 @@ EXPOSE 8000
 CMD ["fastapi", "run", "main.py", "--port", "8000"]
 ```
 
-`FROM python:3.14-slim` starts with a minimal Python 3.14 image. `WORKDIR /app` sets `/app` as the working directory for all subsequent instructions; it is created if it does not exist. `COPY requirements.txt .` copies only the requirements file first. `RUN` executes during the build; `--no-cache-dir` prevents pip from caching downloaded packages, reducing the image size. `COPY . .` then copies the rest of the source code. This two-step copy order means Docker caches the dependency installation layer — if only your source code changes, Docker reuses the cached `RUN pip install` layer, making rebuilds much faster. `EXPOSE 8000` documents that the app listens on port 8000 (does not actually publish the port — you still need `-p`). `CMD` specifies the default command when a container starts; using the exec form `["fastapi", "run", ...]` is preferred over the shell form. `fastapi run` starts the production server using Uvicorn internally.
+`FROM python:3.14-slim` starts with a minimal Python 3.14 image. `WORKDIR /app` sets `/app` as the working directory for all subsequent instructions; it is created if it does not exist. `COPY requirements.txt .` copies only the requirements file first. `RUN` executes during the build; `--no-cache-dir` prevents pip from caching downloaded packages, reducing the image size. `COPY . .` then copies the rest of the source code. This two-step copy order means Docker caches the dependency installation layer. If only your source code changes, Docker reuses the cached `RUN pip install` layer, making rebuilds much faster. `EXPOSE 8000` documents that the app listens on port 8000 but does not actually publish the port, so you still need `-p`. `CMD` specifies the default command when a container starts; using the exec form `["fastapi", "run", ...]` is preferred over the shell form. `fastapi run` starts the production server using Uvicorn internally.
 
 ### CMD vs ENTRYPOINT
 
 ```dockerfile
-# CMD — can be overridden entirely by docker run arguments
+# CMD can be overridden entirely by docker run arguments
 CMD ["fastapi", "run", "main.py", "--port", "8000"]
 
-# ENTRYPOINT — stays fixed; docker run arguments are appended
+# ENTRYPOINT stays fixed; docker run arguments are appended
 ENTRYPOINT ["fastapi"]
 CMD ["run", "main.py", "--port", "8000"]
 ```
 
-With the combined form, `docker run myimage dev main.py` would run `fastapi dev main.py` — the entrypoint (`fastapi`) stays fixed and the CMD is replaced by the arguments you pass.
+With the combined form, `docker run myimage dev main.py` would run `fastapi dev main.py`. The entrypoint (`fastapi`) stays fixed and the CMD is replaced by the arguments you pass.
 
 ### Create `.dockerignore`
 
@@ -313,13 +313,13 @@ docker build -t fastapi-app .         # Build image, tag it "fastapi-app"
 docker run -d -p 8000:8000 --name api fastapi-app
 ```
 
-`-t fastapi-app` tags (names) the image for easy reference. `.` specifies the build context — Docker looks for a Dockerfile in the current directory. `-p 8000:8000` maps host port 8000 to container port 8000. Visit `http://localhost:8000` and `http://localhost:8000/docs` to see your API.
+`-t fastapi-app` tags (names) the image for easy reference. `.` specifies the build context, meaning Docker looks for a Dockerfile in the current directory. `-p 8000:8000` maps host port 8000 to container port 8000. Visit `http://localhost:8000` and `http://localhost:8000/docs` to see your API.
 
 ---
 
 ## Docker Volumes
 
-Containers are ephemeral — data inside a container is lost when it is removed. Volumes provide persistent storage that exists independently of containers.
+Containers are ephemeral, so data inside a container is lost when it is removed. Volumes provide persistent storage that exists independently of containers.
 
 ### Types of Mounts
 
@@ -350,7 +350,17 @@ docker run -d -v $(pwd):/app -p 8000:8000 --name api fastapi-app
 docker run -d -v $(pwd):/app -v app-data:/data -p 8000:8000 --name api fastapi-app
 ```
 
-`$(pwd)` expands to the current working directory on the host. Bind mounts reflect changes immediately in both directions — edit files on your host and the container sees them instantly. Useful for development.
+On Windows, run these commands in PowerShell and use `${pwd}` instead of `$(pwd)`.
+
+`$(pwd)` expands to the current working directory on the host. Bind mounts reflect changes immediately in both directions. Edit files on your host and the container sees them instantly. Useful for development.
+
+To see bind mounts in action, start the container with the development server instead of the production server:
+
+```bash
+docker run -d -v $(pwd):/app -p 8000:8000 --name api fastapi-app fastapi dev main.py --host 0.0.0.0 --port 8000
+```
+
+`fastapi dev` starts the server with auto-reload enabled. `--host 0.0.0.0` makes the server accessible from outside the container. Now open `main.py` on your host machine and change the message from `"Hello, Docker!"` to something else, for example `"Hello, Bind Mounts!"`. Save the file and refresh `http://localhost:8000` in your browser. You will see the updated response without restarting or rebuilding the container. This is the main advantage of bind mounts during development.
 
 ### Removing Volumes
 
@@ -393,7 +403,7 @@ docker run -d --name db --network app-net postgres:16
 docker run -d --name api --network app-net -p 8000:8000 fastapi-app
 ```
 
-`--network app-net` attaches the container to the `app-net` network. Containers on the same custom network can reach each other by container name — the `api` container can connect to the database at `db:5432`. The default `bridge` network does not support name-based discovery; you need a custom network for that.
+`--network app-net` attaches the container to the `app-net` network. Containers on the same custom network can reach each other by container name. For example, the `api` container can connect to the database at `db:5432`. The default `bridge` network does not support name-based discovery; you need a custom network for that.
 
 ---
 
@@ -637,4 +647,4 @@ docker system prune -a --volumes      # Remove everything unused (aggressive)
 docker system df                      # Show Docker disk usage
 ```
 
-`prune` removes unused resources and prompts for confirmation. `-a` (all) with `image prune` removes all images not used by a container, not just dangling ones. `system prune` is a combined cleanup — it removes stopped containers, unused networks, and dangling images in one command. `-a --volumes` with `system prune` also removes unused images and volumes. `system df` shows how much disk space Docker is using broken down by images, containers, volumes, and build cache.
+`prune` removes unused resources and prompts for confirmation. `-a` (all) with `image prune` removes all images not used by a container, not just dangling ones. `system prune` is a combined cleanup that removes stopped containers, unused networks, and dangling images in one command. `-a --volumes` with `system prune` also removes unused images and volumes. `system df` shows how much disk space Docker is using broken down by images, containers, volumes, and build cache.
