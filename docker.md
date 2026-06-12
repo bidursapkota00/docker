@@ -28,7 +28,7 @@ Docker is a platform that packages applications and their dependencies into ligh
 
 Docker lets you eliminate "works on my machine" problems, ship applications with consistent environments across development, testing, and production, isolate services from each other, scale applications quickly, and simplify CI/CD pipelines.
 
-Docker revolves around a few core building blocks that you will use throughout this guide:
+Building blocks of Docker are:
 
 - **Image**: A read-only template with instructions for creating a container. Think of it as a snapshot of your application and its environment.
 - **Container**: A running instance of an image. You can run many containers from the same image.
