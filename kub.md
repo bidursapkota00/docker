@@ -46,7 +46,7 @@ Core concepts of Kubernetes are:
 
 ## Architecture & Components
 
-A Kubernetes cluster consists of a **Control Plane** (master) and one or more **Worker Nodes**.
+A Kubernetes cluster consists of a Control Plane (master) and one or more Worker Nodes.
 
 ### Control Plane Components
 
@@ -65,8 +65,6 @@ A Kubernetes cluster consists of a **Control Plane** (master) and one or more **
 | `kubelet`           | Agent on each node that ensures containers in Pods are running and healthy                                 |
 | `kube-proxy`        | Maintains network rules on each node. Handles routing traffic to the correct Pod                           |
 | `Container Runtime` | Software that actually runs containers (containerd, CRI-O). Docker is no longer the default since K8s 1.24 |
-
-### How It Works
 
 You declare the desired state (e.g., "run 3 replicas of my app") in a YAML manifest. The API server stores this in etcd. Controllers continuously compare the desired state with the actual state and make adjustments. The scheduler places Pods on nodes. The kubelet on each node pulls images and starts containers.
 
@@ -93,7 +91,7 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube
 minikube start
 ```
 
-**Windows**: Download the installer from the [Minikube releases page](https://github.com/kubernetes/minikube/releases) or use `winget install minikube`.
+**Windows**: Use `winget install Kubernetes.minikube`.
 
 `minikube start` creates a VM or container, installs Kubernetes inside it, and configures `kubectl` to connect to it.
 
@@ -212,7 +210,8 @@ metadata:
 spec:
   containers:
     - name: api
-      image: yourusername/fastapi-app:1.0
+      image: fastapi-app:latest
+      imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 8000
       resources:
@@ -231,6 +230,16 @@ kubectl apply -f pod.yaml                # Create or update the pod
 ```
 
 `apply` is declarative: it creates the resource if it does not exist or updates it if it does.
+
+### Forwarding ports
+
+```bash
+kubectl port-forward pod/fastapi-pod 8000:8000
+```
+
+This command forwards traffic from your local machine's port 8000 to the pod's port 8000.
+
+Now, you can access the application at `http://localhost:8000`.
 
 ### Managing Pods
 
@@ -257,7 +266,8 @@ metadata:
 spec:
   containers:
     - name: app
-      image: yourusername/fastapi-app:1.0
+      image: fastapi-app:latest
+      imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 8000
     - name: sidecar
