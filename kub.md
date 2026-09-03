@@ -223,7 +223,7 @@ spec:
           cpu: "500m"
 ```
 
-`apiVersion` and `kind` tell Kubernetes what resource to create. `metadata.name` is the unique name of the Pod. `labels` are key-value pairs used for selection and grouping. `spec.containers` lists the containers inside the Pod. `containerPort` documents which port the container listens on. `resources.requests` is the minimum guaranteed resources; the scheduler uses this to place the Pod. `resources.limits` is the maximum; the container is throttled (CPU) or killed (memory) if it exceeds this. `250m` means 250 millicores (0.25 CPU). `64Mi` means 64 mebibytes of memory.
+`apiVersion` and `kind` tell Kubernetes what resource to create. `metadata.name` is the unique name of the Pod. `labels` are key-value pairs used for selection and grouping. `spec.containers` lists the containers inside the Pod. `containerPort` documents which port the container listens on. `resources.requests` is the minimum guaranteed resources; the scheduler uses this to place the Pod. `resources.limits` is the maximum; the container is throttled (CPU) or killed (memory) if it exceeds this. `250m` means 250 millicores (0.25 CPU). `64Mi` means 64 mebibytes of memory. `imagePullPolicy: IfNotPresent` means the image will be pulled only if it is not already present on the node.
 
 ```bash
 kubectl apply -f pod.yaml                # Create or update the pod
