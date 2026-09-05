@@ -448,8 +448,10 @@ This command forwards traffic from your local machine's port 8000 to the deploym
 ### Imperative Deployment
 
 ```bash
-kubectl create deployment fastapi-deploy --image=yourusername/fastapi-app:1.0 --replicas=3
+kubectl create deployment fastapi-deploy --image=fastapi-app:1.0 --replicas=3
 ```
+
+Image tag should not be latest, otherwise you will get image pull back off error because it only search in docker hub.
 
 ### Managing Deployments
 
