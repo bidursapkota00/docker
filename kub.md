@@ -374,6 +374,14 @@ spec:
 
 `replicas: 3` means the ReplicaSet will ensure exactly 3 Pods are always running. `selector.matchLabels` tells the ReplicaSet which Pods it manages. `template` is the Pod specification used to create new Pods. The labels in `template.metadata.labels` must match `selector.matchLabels`.
 
+### Forwarding ports
+
+```bash
+kubectl port-forward rs/fastapi-rs 8000:8000
+```
+
+This command forwards traffic from your local machine's port 8000 to the replicaset's port 8000.
+
 ```bash
 kubectl apply -f replicaset.yaml
 kubectl get rs                           # List ReplicaSets (rs is shorthand)
@@ -414,7 +422,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: yourusername/fastapi-app:1.0
+          image: fastapi-app:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           resources:
@@ -427,6 +436,14 @@ spec:
 ```
 
 The structure is nearly identical to a ReplicaSet but `kind` is `Deployment`. The Deployment creates and manages a ReplicaSet behind the scenes.
+
+### Forwarding ports
+
+```bash
+kubectl port-forward deploy/fastapi-deploy 8000:8000
+```
+
+This command forwards traffic from your local machine's port 8000 to the deployment's port 8000.
 
 ### Imperative Deployment
 
