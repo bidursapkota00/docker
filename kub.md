@@ -366,7 +366,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: yourusername/fastapi-app:1.0
+          image: fastapi-app:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
 ```
@@ -378,6 +379,11 @@ kubectl apply -f replicaset.yaml
 kubectl get rs                           # List ReplicaSets (rs is shorthand)
 kubectl describe rs fastapi-rs
 kubectl delete rs fastapi-rs
+
+kubectl get pods
+kubectl delete pod fastapi-rs-xxxxx
+kubectl get pods      # still 3 pods (new created by rs)
+
 ```
 
 In practice, you rarely create ReplicaSets directly. Deployments manage ReplicaSets for you and add rolling updates and rollback capabilities.
