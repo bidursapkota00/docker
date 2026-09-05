@@ -197,6 +197,63 @@ kubectl run nginx --image=nginx --port=80
 
 `kubectl run` creates a single Pod. `--port=80` sets the container port metadata but does not expose it externally.
 
+### FastAPI Docker Application for Minikube
+
+This section demonstrates how to containerize a FastAPI application and build it within Minikube's Docker daemon.
+
+#### 1. Dockerfile
+
+This `Dockerfile` uses a lightweight Python base image, installs the necessary dependencies, and sets the startup command to run the FastAPI server.
+
+```Dockerfile
+FROM python:3.14-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["fastapi", "run", "main.py", "--port", "8000"]
+```
+
+#### 2. Application Code (`main.py`)
+
+A simple FastAPI application that returns a JSON message on the root endpoint.
+
+```python
+# main.py
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get('/')
+def home():
+    return {"message": "Hello from Docker"}
+```
+
+#### 3. Dependencies (`requirements.txt`)
+
+We require the `fastapi` framework along with standard dependencies (which include a production ASGI server).
+
+```txt
+fastapi[standard]
+```
+
+#### 4. Building the Image in Minikube
+
+To use the local image directly in Minikube without needing an external container registry, you can evaluate the `minikube docker-env` command. This points your local Docker client to Minikube's internal Docker daemon.
+
+```bash
+# build inside minikube's docker daemon
+eval $(minikube docker-env)
+docker build -t fastapi-app:latest .
+```
+
 ### Pod YAML Manifest
 
 ```yaml
@@ -262,7 +319,7 @@ kubectl delete -f pod.yaml              # Delete resource defined in file
 apiVersion: v1
 kind: Pod
 metadata:
-  name: multi-container
+  name: multi-container-pod
 spec:
   containers:
     - name: app
@@ -277,6 +334,13 @@ spec:
 ```
 
 Multiple containers in a Pod share the same network (they communicate over `localhost`) and can share volumes. Common patterns include sidecar containers for logging, proxies, or monitoring.
+
+```bash
+kubectl apply -f multi-container-pod.yaml
+kubectl port-forward pod/multi-container-pod 8000:8000
+kubectl logs multi-container-pod -c sidecar -f
+kubectl logs multi-container-pod -c app -f
+```
 
 ---
 
